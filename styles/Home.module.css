@@ -1,0 +1,411 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.container {
+  min-height: 100vh;
+  background: #0a0a0f;
+  color: #ffffff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* HEADER */
+.header {
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+  border-bottom: 1px solid #21262d;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.5);
+}
+
+.headerContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 65px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -1px;
+}
+
+.logoFoot {
+  color: #ffffff;
+}
+
+.logoIzi {
+  color: #00d4aa;
+}
+
+.logoIcon {
+  font-size: 24px;
+  margin-left: 4px;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.discordBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #5865F2;
+  color: white;
+  text-decoration: none;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.discordBtn:hover {
+  background: #4752C4;
+  transform: translateY(-1px);
+}
+
+/* PLAYER */
+.playerSection {
+  background: #000;
+  padding: 20px;
+}
+
+.playerContainer {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.playerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #161b22;
+  border-radius: 8px 8px 0 0;
+  font-weight: 600;
+  color: #ff4444;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.streamButtons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.streamBtn {
+  background: #21262d;
+  color: white;
+  border: 1px solid #30363d;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.streamBtn:hover, .streamBtn.active {
+  background: #00d4aa;
+  color: #000;
+  border-color: #00d4aa;
+}
+
+.closeBtn {
+  background: #ff4444;
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.iframeWrapper {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%;
+  background: #000;
+}
+
+.iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* MAIN */
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.section {
+  margin-bottom: 50px;
+}
+
+.sectionTitle {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #21262d;
+}
+
+.liveIndicator {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.loading, .noMatch {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-size: 16px;
+}
+
+/* MATCH GRID */
+.matchGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+/* MATCH CARD */
+.matchCard {
+  background: linear-gradient(145deg, #161b22, #0d1117);
+  border: 1px solid #21262d;
+  border-radius: 16px;
+  padding: 20px;
+  position: relative;
+  transition: all 0.3s;
+  overflow: hidden;
+}
+
+.matchCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #00d4aa, #0099ff);
+}
+
+.matchCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(0, 212, 170, 0.15);
+  border-color: #00d4aa;
+}
+
+.liveCard {
+  border-color: #ff4444;
+  box-shadow: 0 0 20px rgba(255, 68, 68, 0.2);
+}
+
+.liveCard::before {
+  background: linear-gradient(90deg, #ff4444, #ff8800);
+}
+
+.liveBadge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: #ff4444;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  animation: pulse 1.5s infinite;
+}
+
+.competition {
+  font-size: 11px;
+  color: #00d4aa;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+}
+
+.teams {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 10px;
+}
+
+.team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.teamLogo {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+}
+
+.teamName {
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  color: #e6edf3;
+}
+
+.vs {
+  font-size: 18px;
+  font-weight: 900;
+  color: #444;
+  flex-shrink: 0;
+}
+
+.matchInfo {
+  margin-bottom: 8px;
+}
+
+.matchTime {
+  font-size: 12px;
+  color: #8b949e;
+}
+
+.countdown {
+  font-size: 13px;
+  color: #00d4aa;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.watchBtn {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.watchBtnLive {
+  background: linear-gradient(135deg, #ff4444, #ff8800);
+  color: white;
+}
+
+.watchBtnLive:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 15px rgba(255, 68, 68, 0.4);
+}
+
+.watchBtnSoon {
+  background: linear-gradient(135deg, #00d4aa, #0099ff);
+  color: #000;
+}
+
+.watchBtnSoon:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 15px rgba(0, 212, 170, 0.4);
+}
+
+.watchBtn:disabled {
+  background: #21262d;
+  color: #666;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* FOOTER */
+.footer {
+  background: #0d1117;
+  border-top: 1px solid #21262d;
+  padding: 40px 20px;
+  text-align: center;
+  margin-top: 40px;
+}
+
+.footerContent {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.footerLogo {
+  font-size: 32px;
+  font-weight: 900;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.footerText {
+  color: #8b949e;
+  margin-bottom: 16px;
+}
+
+.footerDiscord {
+  display: inline-block;
+  background: #5865F2;
+  color: white;
+  text-decoration: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  transition: background 0.2s;
+}
+
+.footerDiscord:hover {
+  background: #4752C4;
+}
+
+.footerDisclaimer {
+  color: #444;
+  font-size: 12px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 600px) {
+  .matchGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .headerContent {
+    padding: 0 12px;
+  }
+  
+  .logo {
+    font-size: 22px;
+  }
+}
