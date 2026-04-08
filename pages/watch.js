@@ -15,33 +15,11 @@ export default function Watch() {
   const [match, setMatch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedSource, setSelectedSource] = useState(0);
-  const [playerError, setPlayerError] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(null);
   const iframeRef = useRef(null);
 
   useEffect(() => {
     if (m) fetchMatch();
   }, [m]);
-
-  useEffect(() => {
-    if (match && match.statut === 'a_venir' && match.date_match) {
-      const interval = setInterval(() => {
-        const diff = new Date(match.date_match) - new Date();
-        if (diff <= 0) {
-          setTimeLeft('00:00:00');
-          clearInterval(interval);
-        } else {
-          const h = Math.floor(diff / 3600000);
-          const min = Math.floor((diff % 3600000) / 60000);
-          const sec = Math.floor((diff % 60000) / 1000);
-          setTimeLeft(
-            `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}`
-          );
-        }
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [match]);
 
   async function fetchMatch() {
     const { data } = await supabase
@@ -54,74 +32,120 @@ export default function Watch() {
   }
 
   function getLiens() {
-    if (!match?.liens_stream) return [];
+    if (!match) return [];
+    // Essaie les champs possibles
+    const raw = match.liens_stream || match.lien_stream_1;
+    if (!raw) {
+      // Construire depuis les champs séparés
+      const liens = [];
+      if (match.lien_stream_1) liens.push({ nom: 'Source 1', url: match.lien_stream_1 });
+      if (match.lien_stream_2) liens.push({ nom: 'Source 2', url: match.lien_stream_2 });
+      if (match.lien_stream_3) liens.push({ nom: 'Source 3', url: match.lien_stream_3 });
+      return liens;
+    }
     try {
-      return typeof match.liens_stream === 'string'
-        ? JSON.parse(match.liens_stream)
-        : match.liens_stream;
-    } catch { return []; }
+      return typeof raw === 'string' ? JSON.parse(raw) : raw;
+    } catch {
+      return [{ nom: 'Source 1', url: raw }];
+    }
   }
 
-  const liens = getLiens();
-  const currentLien = liens[selectedSource];
-
-  function handleRetry() {
-    setPlayerError(false);
-    setTimeout(() => {
-      if (iframeRef.current) {
-        iframeRef.current.src = iframeRef.current.src;
-      }
-    }, 100);
+  function changeSource(index) {
+    setSelectedSource(index);
+    // Force reload iframe
+    if (iframeRef.current) {
+      const url = liens[index]?.url;
+      iframeRef.current.src = '';
+      setTimeout(() => {
+        if (iframeRef.current) iframeRef.current.src = url;
+      }, 100);
+    }
   }
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#0b0b0f', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{
+      minHeight: '100vh', background: '#0b0b0f',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      color: 'white', fontFamily: 'Inter, sans-serif', flexDirection: 'column', gap: '16px'
+    }}>
+      <div style={{
+        width: '40px', height: '40px', border: '3px solid #1e1e2e',
+        borderTop: '3px solid #22d3ee', borderRadius: '50%',
+        animation: 'spin 1s linear infinite'
+      }}></div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       Chargement...
     </div>
   );
 
   if (!match) return (
-    <div style={{ minHeight: '100vh', background: '#0b0b0f', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', fontFamily: 'Inter, sans-serif', gap: '16px' }}>
+    <div style={{
+      minHeight: '100vh', background: '#0b0b0f',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      color: 'white', fontFamily: 'Inter, sans-serif', gap: '16px'
+    }}>
       <div style={{ fontSize: '48px' }}>😕</div>
       <div style={{ fontSize: '20px', fontWeight: '700' }}>Match introuvable</div>
       <Link href="/" style={{ color: '#22d3ee', textDecoration: 'none' }}>← Retour à l'accueil</Link>
     </div>
   );
 
+  const liens = getLiens();
+  const currentUrl = liens[selectedSource]?.url || '';
   const isLive = match.statut === 'live';
-  const isUpcoming = match.statut === 'a_venir';
 
   return (
     <>
       <Head>
         <title>{match.equipe_domicile} vs {match.equipe_exterieur} - Footizi</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>{`
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body { background: #0b0b0f; }
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+          }
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+          .source-btn:hover {
+            border-color: #22d3ee !important;
+            color: #22d3ee !important;
+          }
+        `}</style>
       </Head>
 
-      <div style={{ minHeight: '100vh', background: '#0b0b0f', color: 'white', fontFamily: 'Inter, Segoe UI, sans-serif' }}>
+      <div style={{
+        minHeight: '100vh', background: '#0b0b0f',
+        color: 'white', fontFamily: 'Inter, Segoe UI, sans-serif'
+      }}>
 
         {/* HEADER */}
         <header style={{
           background: '#0f0f14',
           borderBottom: '1px solid #1e1e2e',
-          padding: '0 20px',
+          padding: '0 24px',
           height: '56px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           position: 'sticky',
           top: 0,
-          zIndex: 50
+          zIndex: 100
         }}>
           <Link href="/" style={{
             color: 'white', textDecoration: 'none',
-            display: 'flex', alignItems: 'center', gap: '8px',
+            display: 'flex', alignItems: 'center', gap: '10px',
             fontSize: '14px', fontWeight: '600'
           }}>
-            ← <span style={{ fontSize: '20px', fontWeight: '900' }}>
+            <span style={{ color: '#888' }}>←</span>
+            <span style={{ fontSize: '22px', fontWeight: '900' }}>
               <span style={{ color: 'white' }}>Foot</span>
               <span style={{ color: '#22d3ee' }}>izi</span>
-            </span> ⚽
+            </span>
+            <span>⚽</span>
           </Link>
 
           <a
@@ -130,7 +154,7 @@ export default function Watch() {
             rel="noopener noreferrer"
             style={{
               background: '#5865f2', color: 'white',
-              padding: '6px 14px', borderRadius: '8px',
+              padding: '7px 16px', borderRadius: '8px',
               textDecoration: 'none', fontWeight: '700', fontSize: '13px',
               display: 'flex', alignItems: 'center', gap: '6px'
             }}
@@ -142,188 +166,166 @@ export default function Watch() {
           </a>
         </header>
 
-        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '20px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px 16px' }}>
 
-          {/* INFOS MATCH */}
+          {/* INFOS MATCH EN HAUT */}
           <div style={{
             background: '#111118',
             border: '1px solid #1e1e2e',
             borderRadius: '14px',
-            padding: '20px 24px',
-            marginBottom: '20px',
+            padding: '16px 24px',
+            marginBottom: '16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             flexWrap: 'wrap',
-            gap: '16px'
+            gap: '12px'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               {match.logo_domicile && (
                 <img src={match.logo_domicile} alt={match.equipe_domicile}
-                  style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
+                  style={{ width: '44px', height: '44px', objectFit: 'contain' }} />
               )}
               <div>
-                <div style={{ fontWeight: '800', fontSize: '18px' }}>
-                  {match.equipe_domicile} <span style={{ color: '#555' }}>vs</span> {match.equipe_exterieur}
+                <div style={{ fontWeight: '800', fontSize: '17px' }}>
+                  {match.equipe_domicile}
+                  <span style={{ color: '#555', margin: '0 8px' }}>vs</span>
+                  {match.equipe_exterieur}
                 </div>
-                <div style={{ color: '#888', fontSize: '13px', marginTop: '4px' }}>
-                  {match.competition}
+                <div style={{ color: '#666', fontSize: '13px', marginTop: '3px' }}>
+                  🏆 {match.competition}
                 </div>
               </div>
               {match.logo_exterieur && (
                 <img src={match.logo_exterieur} alt={match.equipe_exterieur}
-                  style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
+                  style={{ width: '44px', height: '44px', objectFit: 'contain' }} />
               )}
             </div>
-            <div>
-              {isLive && (
-                <span style={{
-                  background: '#ef4444', color: 'white',
-                  padding: '6px 14px', borderRadius: '20px',
-                  fontWeight: '800', fontSize: '13px',
-                  display: 'flex', alignItems: 'center', gap: '6px'
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {isLive ? (
+                <div style={{
+                  background: '#ef4444',
+                  padding: '6px 16px', borderRadius: '20px',
+                  fontWeight: '800', fontSize: '12px',
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  letterSpacing: '0.5px'
                 }}>
-                  <span style={{ width: '8px', height: '8px', background: 'white', borderRadius: '50%', display: 'inline-block' }}></span>
+                  <span style={{
+                    width: '7px', height: '7px',
+                    background: 'white', borderRadius: '50%',
+                    display: 'inline-block',
+                    animation: 'pulse 1.5s infinite'
+                  }}></span>
                   EN DIRECT
-                </span>
-              )}
-              {isUpcoming && (
-                <span style={{
-                  background: '#1e1e2e', color: '#22d3ee',
-                  padding: '6px 14px', borderRadius: '20px',
-                  fontWeight: '700', fontSize: '13px'
+                </div>
+              ) : (
+                <div style={{
+                  background: '#1a1a24', color: '#22d3ee',
+                  padding: '6px 16px', borderRadius: '20px',
+                  fontWeight: '700', fontSize: '12px', border: '1px solid #22d3ee33'
                 }}>
                   À VENIR
-                </span>
+                </div>
               )}
             </div>
           </div>
 
-          {/* PLAYER ZONE */}
+          {/* PLAYER PRINCIPAL */}
           <div style={{
             background: '#000',
             borderRadius: '14px',
             overflow: 'hidden',
             position: 'relative',
+            width: '100%',
             aspectRatio: '16/9',
-            marginBottom: '20px',
-            border: '1px solid #1e1e2e'
+            border: '1px solid #1e1e2e',
+            marginBottom: '16px'
           }}>
-
-            {/* Diffusion à venir */}
-            {isUpcoming && (
-              <div style={{
-                position: 'absolute', inset: 0,
-                display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center',
-                background: 'linear-gradient(135deg, #0b0b0f, #111128)',
-                gap: '16px'
-              }}>
-                <div style={{ fontSize: '48px' }}>⏳</div>
-                <div style={{ fontSize: '20px', fontWeight: '800', color: '#22d3ee' }}>Diffusion à venir</div>
-                {timeLeft && (
-                  <div style={{
-                    fontSize: '48px', fontWeight: '900',
-                    fontFamily: 'monospace', color: 'white',
-                    letterSpacing: '4px'
-                  }}>
-                    {timeLeft}
-                  </div>
-                )}
-                <div style={{ color: '#888', fontSize: '14px' }}>
-                  Le lecteur s'affichera automatiquement au lancement.
-                </div>
-              </div>
-            )}
-
-            {/* Player actif */}
-            {isLive && currentLien && !playerError && (
+            {isLive && currentUrl ? (
               <iframe
                 ref={iframeRef}
-                src={currentLien.url}
-                style={{ width: '100%', height: '100%', border: 'none' }}
+                src={currentUrl}
+                style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
                 allowFullScreen
-                allow="autoplay; fullscreen"
-                onError={() => setPlayerError(true)}
+                allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                scrolling="no"
               />
-            )}
-
-            {/* Erreur source */}
-            {isLive && playerError && (
+            ) : isLive && liens.length === 0 ? (
               <div style={{
                 position: 'absolute', inset: 0,
                 display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center',
-                background: '#0b0b0f', gap: '12px', padding: '20px', textAlign: 'center'
+                alignItems: 'center', justifyContent: 'center', gap: '12px'
               }}>
-                <div style={{ fontSize: '40px' }}>📡</div>
-                <div style={{ fontSize: '18px', fontWeight: '800', color: '#ef4444' }}>Source indisponible</div>
-                <div style={{ color: '#888', fontSize: '14px', maxWidth: '400px' }}>
-                  La source n'a pas pu charger. Si vous êtes hors de France, essayez un VPN. Sinon, essayez une autre source.
-                </div>
-                <button onClick={handleRetry} style={{
-                  background: '#22d3ee', color: 'black',
-                  border: 'none', padding: '10px 24px',
-                  borderRadius: '8px', fontWeight: '800',
-                  fontSize: '14px', cursor: 'pointer'
-                }}>
-                  🔄 Réessayer
-                </button>
+                <div style={{ fontSize: '48px' }}>📡</div>
+                <div style={{ color: '#888', fontSize: '16px' }}>Aucune source disponible</div>
               </div>
-            )}
-
-            {/* Aucune source */}
-            {isLive && liens.length === 0 && (
+            ) : (
               <div style={{
                 position: 'absolute', inset: 0,
                 display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center',
-                background: '#0b0b0f', gap: '12px'
+                alignItems: 'center', justifyContent: 'center', gap: '12px',
+                background: 'linear-gradient(135deg, #0b0b0f 0%, #111128 100%)'
               }}>
-                <div style={{ fontSize: '40px' }}>📡</div>
-                <div style={{ fontSize: '16px', color: '#888' }}>Aucune source disponible pour le moment</div>
+                <div style={{ fontSize: '48px' }}>⏳</div>
+                <div style={{ color: '#22d3ee', fontSize: '20px', fontWeight: '800' }}>
+                  Diffusion à venir
+                </div>
+                <div style={{ color: '#666', fontSize: '14px' }}>
+                  Le lecteur démarrera au lancement du match
+                </div>
               </div>
             )}
           </div>
 
-          {/* SÉLECTEUR DE SOURCES */}
+          {/* SOURCES */}
           {isLive && liens.length > 0 && (
             <div style={{
               background: '#111118',
               border: '1px solid #1e1e2e',
               borderRadius: '14px',
               padding: '20px 24px',
-              marginBottom: '20px'
+              marginBottom: '16px'
             }}>
-              <div style={{ fontWeight: '800', fontSize: '15px', marginBottom: '14px', color: '#ccc' }}>
+              <div style={{
+                fontSize: '13px', fontWeight: '700',
+                color: '#888', marginBottom: '14px',
+                textTransform: 'uppercase', letterSpacing: '0.5px'
+              }}>
                 📺 Sources disponibles
               </div>
+
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                 {liens.map((lien, i) => (
                   <button
                     key={i}
-                    onClick={() => { setSelectedSource(i); setPlayerError(false); }}
+                    className="source-btn"
+                    onClick={() => changeSource(i)}
                     style={{
-                      background: selectedSource === i ? '#22d3ee' : '#1a1a24',
-                      color: selectedSource === i ? 'black' : 'white',
+                      background: selectedSource === i ? '#22d3ee' : '#16161f',
+                      color: selectedSource === i ? '#000' : '#ccc',
                       border: `1px solid ${selectedSource === i ? '#22d3ee' : '#2a2a3a'}`,
-                      padding: '10px 20px',
+                      padding: '10px 22px',
                       borderRadius: '10px',
                       fontWeight: '700',
                       fontSize: '14px',
                       cursor: 'pointer',
-                      transition: 'all 0.2s',
+                      transition: 'all 0.15s',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px'
                     }}
                   >
-                    📺 {lien.nom || `Source ${i + 1}`}
+                    <span>📺</span>
+                    <span>{lien.nom || `Source ${i + 1}`}</span>
                     {lien.qualite && (
                       <span style={{
-                        background: selectedSource === i ? 'rgba(0,0,0,0.2)' : '#2a2a3a',
-                        padding: '2px 6px', borderRadius: '4px',
-                        fontSize: '11px', fontWeight: '600'
+                        background: selectedSource === i ? 'rgba(0,0,0,0.15)' : '#2a2a3a',
+                        color: selectedSource === i ? '#000' : '#888',
+                        padding: '2px 7px',
+                        borderRadius: '5px',
+                        fontSize: '11px',
+                        fontWeight: '600'
                       }}>
                         {lien.qualite}
                       </span>
@@ -331,60 +333,35 @@ export default function Watch() {
                   </button>
                 ))}
               </div>
-              <div style={{ marginTop: '12px', color: '#555', fontSize: '12px' }}>
-                Si une source ne fonctionne pas, essayez une autre source ou utilisez un VPN.
+
+              <div style={{
+                marginTop: '14px',
+                padding: '10px 14px',
+                background: '#0d0d14',
+                borderRadius: '8px',
+                color: '#555',
+                fontSize: '12px',
+                display: 'flex', alignItems: 'center', gap: '8px'
+              }}>
+                <span>💡</span>
+                <span>Si une source ne fonctionne pas, essayez une autre. Certaines sources nécessitent un VPN si vous êtes hors de France.</span>
               </div>
             </div>
           )}
 
-          {/* RECONNEXION INFO */}
-          {isLive && (
-            <div style={{
-              background: '#111118',
-              border: '1px solid #1e1e2e',
-              borderRadius: '14px',
-              padding: '16px 24px',
-              marginBottom: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              color: '#888',
-              fontSize: '13px'
-            }}>
-              <span>🔄</span>
-              <span>Reconnexion en cours automatiquement si la source coupe...</span>
-            </div>
-          )}
-
-          {/* VOUS REGARDEZ */}
+          {/* DISCORD */}
           <div style={{
-            background: '#111118',
-            border: '1px solid #1e1e2e',
-            borderRadius: '14px',
-            padding: '20px 24px',
-            marginBottom: '20px'
-          }}>
-            <div style={{ color: '#888', fontSize: '13px', marginBottom: '6px' }}>Vous regardez</div>
-            <div style={{ fontWeight: '800', fontSize: '18px' }}>
-              {match.equipe_domicile} — {match.equipe_exterieur}
-            </div>
-            <div style={{ color: '#888', fontSize: '13px', marginTop: '4px' }}>{match.competition}</div>
-          </div>
-
-          {/* DISCORD CTA */}
-          <div style={{
-            background: 'linear-gradient(135deg, #5865f2, #4752c4)',
+            background: 'linear-gradient(135deg, #5865f2 0%, #4752c4 100%)',
             borderRadius: '14px',
             padding: '24px',
-            textAlign: 'center',
-            marginBottom: '20px'
+            textAlign: 'center'
           }}>
-            <div style={{ fontSize: '24px', marginBottom: '8px' }}>💬</div>
+            <div style={{ fontSize: '28px', marginBottom: '8px' }}>💬</div>
             <div style={{ fontWeight: '800', fontSize: '18px', marginBottom: '6px' }}>
               Rejoignez la communauté Footizi
             </div>
-            <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px', marginBottom: '16px' }}>
-              Discussions live, alertes matchs, et plus encore sur notre Discord !
+            <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '14px', marginBottom: '18px' }}>
+              Discussions live, alertes matchs, et bien plus sur notre Discord !
             </div>
             <a
               href="https://discord.gg/YhJDgrfauT"
@@ -392,7 +369,7 @@ export default function Watch() {
               rel="noopener noreferrer"
               style={{
                 background: 'white', color: '#5865f2',
-                padding: '12px 28px', borderRadius: '10px',
+                padding: '12px 32px', borderRadius: '10px',
                 textDecoration: 'none', fontWeight: '800',
                 fontSize: '15px', display: 'inline-block'
               }}
@@ -409,13 +386,14 @@ export default function Watch() {
           padding: '24px 20px',
           textAlign: 'center',
           color: '#555',
-          fontSize: '13px'
+          fontSize: '13px',
+          marginTop: '24px'
         }}>
           <div style={{ fontSize: '18px', fontWeight: '900', marginBottom: '6px' }}>
             <span style={{ color: 'white' }}>Foot</span>
             <span style={{ color: '#22d3ee' }}>izi</span> ⚽
           </div>
-          <p style={{ margin: '0' }}>Ce site ne stocke aucune vidéo. Les flux sont fournis par des tiers.</p>
+          <p>Ce site ne stocke aucune vidéo. Les flux sont fournis par des tiers.</p>
         </footer>
       </div>
     </>
