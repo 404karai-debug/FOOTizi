@@ -256,7 +256,7 @@ const res = await fetch(`${SUPABASE_URL}/rest/v1/diffusions?select=*&order=match
       const logo2 = m.team2_logo || 'https://via.placeholder.com/52x52/1f2937/00e676?text=' + encodeURIComponent((m.team2||'?')[0]);
 
       return `
-        <div class="match-card" onclick="window.location='watch.html?m=${m.id}'">
+        <div class="match-card" onclick="window.location='watch.html?m=${m.slug}'">
           <div class="card-top">
             <div class="competition">${m.competition || 'Football'}</div>
             <div class="status-badge ${statusClass}">${statusLabel}</div>
@@ -277,7 +277,7 @@ const res = await fetch(`${SUPABASE_URL}/rest/v1/diffusions?select=*&order=match
             <div class="match-channel">📺 ${m.channel || 'Non défini'}</div>
             ${m.viewers ? `<div class="viewers">👁 ${m.viewers}</div>` : ''}
           </div>
-          ${m.status === 'live' ? `<a href="watch.html?m=${m.id}" class="watch-btn" onclick="event.stopPropagation()">▶ Regarder maintenant</a>` : ''}
+          ${m.status === 'live' ? `<a href="watch.html?m=${m.slug}" class="watch-btn" onclick="event.stopPropagation()">▶ Regarder maintenant</a>` : ''}
         </div>
       `;
     }).join('');
