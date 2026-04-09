@@ -396,7 +396,7 @@ const isNumeric = /^\d+$/.test(param);
 const { data: match, error } = await sbClient
   .from('matches')
   .select('*')
-  .eq(isNumeric ? 'id' : 'slug', isNumeric ? parseInt(param, 10) : param)
+  .eq('slug', param)
   .single();
 
   if (error || !match) {
