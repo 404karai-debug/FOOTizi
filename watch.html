@@ -391,14 +391,13 @@
   if (!param) { showNotFound('Aucun match spécifié'); return; }
 
   // Solution 2 : id si numérique, slug sinon
-  const isNumeric = /^\d+$/.test(param);
-  const field     = isNumeric ? 'id' : 'slug';
+const isNumeric = /^\d+$/.test(param);
 
-  const { data: match, error } = await sbClient
-    .from('matches')
-    .select('*')
-    .eq(field, param)
-    .single();
+const { data: match, error } = await sbClient
+  .from('matches')
+  .select('*')
+  .eq(isNumeric ? 'id' : 'slug', isNumeric ? parseInt(param, 10) : param)
+  .single();
 
   if (error || !match) {
     console.error('Supabase error:', error);
