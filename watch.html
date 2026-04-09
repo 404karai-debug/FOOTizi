@@ -394,7 +394,7 @@
 const isNumeric = /^\d+$/.test(param);
 
 const { data: match, error } = await sbClient
-  .from('matches')
+  .from('diffusions')
   .select('*')
   .eq('slug', param)
   .single();
