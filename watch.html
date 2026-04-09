@@ -386,14 +386,18 @@
 
   // ── Récupérer le match ────────────────────────────────────
   const params = new URLSearchParams(window.location.search);
-  const slug   = params.get('m');
+  const param  = params.get('m');
 
-  if (!slug) { showNotFound('Aucun match spécifié'); return; }
+  if (!param) { showNotFound('Aucun match spécifié'); return; }
+
+  // Solution 2 : id si numérique, slug sinon
+  const isNumeric = /^\d+$/.test(param);
+  const field     = isNumeric ? 'id' : 'slug';
 
   const { data: match, error } = await sbClient
     .from('matches')
     .select('*')
-    .eq('slug', slug)
+    .eq(field, param)
     .single();
 
   if (error || !match) {
