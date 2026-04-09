@@ -81,7 +81,6 @@
       .page-wrap { grid-template-columns: 1fr; }
     }
 
-    /* PLAYER COL */
     .player-col {}
 
     /* MATCH HEADER */
@@ -205,7 +204,6 @@
       justify-content: space-between; gap: 14px;
       background: var(--bg2); border-radius: 12px;
       padding: 12px 16px; margin-top: 12px;
-      border-left: 3px solid var(--green);
       border: 1px solid var(--border);
       border-left: 3px solid var(--green);
     }
@@ -248,7 +246,7 @@
       font-size: 0.85rem;
     }
 
-    /* CHAT COL */
+    /* CHAT */
     .chat-col {
       display: flex; flex-direction: column; gap: 12px;
     }
@@ -289,7 +287,7 @@
     </a>
     <a href="index.html" class="brand">Foot<em>izi</em></a>
     <div class="nav-right">
-      <span class="spectateurs-badge" id="navSpec">
+      <span class="spectateurs-badge">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         <span id="navSpecCount">0</span>
       </span>
@@ -303,79 +301,133 @@
 
 <!-- CONTENU -->
 <div class="page-wrap" id="pageWrap">
-
-  <!-- PLAYER COL -->
   <div class="player-col" id="playerCol">
     <div class="not-found">
       <h2>Chargement...</h2>
       <p>Récupération du match en cours</p>
     </div>
   </div>
-
-  <!-- CHAT COL -->
   <div class="chat-col">
-    <div class="chat-box">
+    <div class="chat-box" id="chatBox">
       <iframe src="https://www.twitch.tv/embed/ri1afoot/chat?parent=footizi.vercel.app&parent=localhost"
         allowfullscreen>
       </iframe>
     </div>
   </div>
-
 </div>
 
 <!-- SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
-const SUPABASE_URL = 'https://cauctdopucifmsocjupb.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhdWN0ZG9wdWNpZm1zb2NqdXBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2Njc0NTUsImV4cCI6MjA5MTI0MzQ1NX0.cvNTmmclUbwYLLvkVvAIff2R5diqzg1lQIJSucm9W5o';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
 (async function() {
-  const params = new URLSearchParams(window.location.search);
-  const slug = params.get('m');
 
-  if (!slug) {
-    showNotFound('Aucun match spécifié');
-    return;
+  // ── Supabase ──────────────────────────────────────────────
+  const SUPABASE_URL = 'https://cauctdopucifmsocjupb.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhdWN0ZG9wdWNpZm1zb2NqdXBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2Njc0NTUsImV4cCI6MjA5MTI0MzQ1NX0.cvNTmmclUbwYLLvkVvAIff2R5diqzg1lQIJSucm9W5o';
+  const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ── Helpers ───────────────────────────────────────────────
+  function updateSpectateurs(n) {
+    const fmt = n.toLocaleString('fr-FR');
+    const e1 = document.getElementById('specNum');
+    const e2 = document.getElementById('navSpecCount');
+    if (e1) e1.textContent = fmt;
+    if (e2) e2.textContent = fmt;
   }
 
-  // Charger le match depuis Supabase
-  const { data: match, error } = await supabase
+  function showNotFound(msg) {
+    document.getElementById('playerCol').innerHTML = `
+      <div class="not-found">
+        <h2>Match introuvable</h2>
+        <p>${msg}</p>
+        <a href="index.html" class="btn-primary">← Retour à l'accueil</a>
+      </div>`;
+  }
+
+  function loadSource(source) {
+    const video  = document.getElementById('mainPlayer');
+    const iframe = document.getElementById('embedPlayer');
+    const error  = document.getElementById('playerError');
+    if (!video || !iframe) return;
+    error?.classList.remove('visible');
+
+    if (source.type === 'iframe') {
+      video.style.display  = 'none';
+      video.src            = '';
+      iframe.style.display = 'block';
+      iframe.src           = source.url;
+    } else {
+      iframe.style.display = 'none';
+      iframe.src           = '';
+      video.style.display  = 'block';
+      video.src            = source.url;
+      video.play().catch(() => error?.classList.add('visible'));
+    }
+  }
+
+  function startCountdown(target) {
+    const el = document.getElementById('prematchTimer');
+    if (!el) return;
+    function tick() {
+      const diff = target - new Date();
+      if (diff <= 0) {
+        el.textContent = '00:00:00';
+        document.getElementById('prematch')?.classList.add('hidden');
+        return;
+      }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+    tick();
+    setInterval(tick, 1000);
+  }
+
+  // ── Récupérer le match ────────────────────────────────────
+  const params = new URLSearchParams(window.location.search);
+  const slug   = params.get('m');
+
+  if (!slug) { showNotFound('Aucun match spécifié'); return; }
+
+  const { data: match, error } = await sbClient
     .from('matches')
     .select('*')
     .eq('slug', slug)
     .single();
 
   if (error || !match) {
+    console.error('Supabase error:', error);
     showNotFound('Match introuvable ou supprimé');
     return;
   }
 
-  // Mettre à jour le titre
+  // ── Titre ─────────────────────────────────────────────────
   document.title = `${match.home_name} vs ${match.away_name} — Footizi`;
 
-  // Construire le badge statut
-  let badgeClass = 'badge-upcoming';
-  let badgeText = 'À venir';
-  if (match.status === 'live') { badgeClass = 'badge-live'; badgeText = '🔴 LIVE'; }
+  // ── Badge statut ──────────────────────────────────────────
+  let badgeClass = 'badge-upcoming', badgeText = 'À venir';
+  if (match.status === 'live')     { badgeClass = 'badge-live';     badgeText = '🔴 LIVE'; }
   if (match.status === 'finished') { badgeClass = 'badge-finished'; badgeText = 'Terminé'; }
 
-  // Construire les sources
+  // ── Sources ───────────────────────────────────────────────
   const sources = Array.isArray(match.sources) ? match.sources : [];
   let sourcesHTML = '';
   sources.forEach((s, i) => {
-    sourcesHTML += `<button class="src-btn${i===0?' active':''}" data-index="${i}" data-type="${s.type||'m3u8'}" data-url="${s.url}">
+    sourcesHTML += `<button class="src-btn${i===0?' active':''}"
+      data-index="${i}" data-type="${s.type||'iframe'}" data-url="${s.url}">
       <span>📡</span>${s.label || 'Source '+(i+1)}
     </button>`;
   });
 
-  // Heure du match
-  const matchTime = match.match_time ? new Date(match.match_time) : null;
-  const matchTimeStr = matchTime ? matchTime.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) : '';
+  // ── Heure du match ────────────────────────────────────────
+  const matchTime    = match.match_time ? new Date(match.match_time) : null;
+  const matchTimeStr = matchTime
+    ? matchTime.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})
+    : '';
 
-  // Construire le HTML du player col
+  // ── Injecter le HTML ──────────────────────────────────────
   document.getElementById('playerCol').innerHTML = `
-    <!-- MATCH HEADER -->
     <div class="match-header">
       <div class="team-block">
         ${match.home_logo ? `<img class="team-logo" src="${match.home_logo}" alt="${match.home_name}" onerror="this.style.display='none'">` : ''}
@@ -393,7 +445,6 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       </div>
     </div>
 
-    <!-- PLAYER -->
     <div class="player-block" id="playerBlock">
       <div class="prematch${match.status !== 'upcoming' ? ' hidden' : ''}" id="prematch">
         <div class="prematch-label">Diffusion à venir</div>
@@ -403,15 +454,14 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       </div>
 
       <video id="mainPlayer" playsinline controls preload="metadata"
-        style="display:${sources.length && sources[0].type !== 'iframe' ? 'block' : 'none'};width:100%;height:100%">
-      </video>
+        style="display:none;width:100%;height:100%"></video>
+
       <iframe id="embedPlayer"
         title="Lecteur intégré"
         allowfullscreen
         allow="autoplay; encrypted-media; fullscreen"
         sandbox="allow-same-origin allow-scripts allow-presentation"
-        style="display:none;width:100%;height:100%;border:none">
-      </iframe>
+        style="display:none;width:100%;height:100%;border:none"></iframe>
 
       <div class="player-error" id="playerError">
         <div class="err-title">Source indisponible</div>
@@ -420,12 +470,10 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       </div>
     </div>
 
-    <!-- SOURCES -->
     <div class="sources-wrap">
       <div class="sources-list" id="sourcesList">${sourcesHTML}</div>
     </div>
 
-    <!-- WATCH BAR -->
     <div class="watch-bar">
       <div class="watch-left">
         <div>
@@ -435,38 +483,37 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       </div>
       <div class="watch-right">
         ${match.channel ? `<span class="info-tag channel">📺 ${match.channel}</span>` : ''}
-        <span class="info-tag spec" id="specCount">
+        <span class="info-tag spec">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          <span id="specNum">${match.spectateurs || 0}</span>
+          <span id="specNum">0</span>
         </span>
       </div>
     </div>
   `;
 
-  // Charger la première source
-  if (sources.length > 0) {
-    loadSource(sources[0]);
+  // ── Chat dynamique ────────────────────────────────────────
+  if (match.chat_url) {
+    document.getElementById('chatBox').innerHTML =
+      `<iframe src="${match.chat_url}" allowfullscreen></iframe>`;
   }
 
-  // Prématch countdown
-  if (match.status === 'upcoming' && matchTime) {
-    startCountdown(matchTime);
-  }
+  // ── Charger source 1 ──────────────────────────────────────
+  if (sources.length > 0) loadSource(sources[0]);
 
-  // Events sources
-  document.getElementById('sourcesList').addEventListener('click', function(e) {
+  // ── Countdown prématch ────────────────────────────────────
+  if (match.status === 'upcoming' && matchTime) startCountdown(matchTime);
+
+  // ── Clic sur sources ─────────────────────────────────────
+  document.getElementById('sourcesList').addEventListener('click', e => {
     const btn = e.target.closest('.src-btn');
     if (!btn) return;
     document.querySelectorAll('.src-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    loadSource({
-      type: btn.dataset.type,
-      url: btn.dataset.url
-    });
+    loadSource({ type: btn.dataset.type, url: btn.dataset.url });
   });
 
-  // Retry
-  document.getElementById('retryBtn')?.addEventListener('click', function() {
+  // ── Retry ─────────────────────────────────────────────────
+  document.getElementById('retryBtn')?.addEventListener('click', () => {
     const active = document.querySelector('.src-btn.active');
     if (active) {
       document.getElementById('playerError').classList.remove('visible');
@@ -474,74 +521,13 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     }
   });
 
-  // Spectateurs simulés
+  // ── Spectateurs simulés ───────────────────────────────────
   updateSpectateurs(match.spectateurs || Math.floor(Math.random() * 500) + 50);
   setInterval(() => {
-    const current = parseInt(document.getElementById('specNum')?.textContent || '0');
+    const cur   = parseInt(document.getElementById('specNum')?.textContent?.replace(/\s/g,'') || '0');
     const delta = Math.floor(Math.random() * 20) - 10;
-    const next = Math.max(10, current + delta);
-    updateSpectateurs(next);
+    updateSpectateurs(Math.max(10, cur + delta));
   }, 8000);
-
-  function loadSource(source) {
-    const video = document.getElementById('mainPlayer');
-    const iframe = document.getElementById('embedPlayer');
-    const error = document.getElementById('playerError');
-    if (!video || !iframe) return;
-    error?.classList.remove('visible');
-
-    if (source.type === 'iframe') {
-      video.style.display = 'none';
-      video.src = '';
-      iframe.style.display = 'block';
-      iframe.src = source.url;
-    } else {
-      iframe.style.display = 'none';
-      iframe.src = '';
-      video.style.display = 'block';
-      video.src = source.url;
-      video.play().catch(() => {
-        if (error) error.classList.add('visible');
-      });
-    }
-  }
-
-  function startCountdown(target) {
-    const el = document.getElementById('prematchTimer');
-    if (!el) return;
-    function tick() {
-      const now = new Date();
-      const diff = target - now;
-      if (diff <= 0) {
-        el.textContent = '00:00:00';
-        document.getElementById('prematch')?.classList.add('hidden');
-        return;
-      }
-      const h = Math.floor(diff / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-    }
-    tick();
-    setInterval(tick, 1000);
-  }
-
-  function updateSpectateurs(n) {
-    const formatted = n.toLocaleString('fr-FR');
-    const el1 = document.getElementById('specNum');
-    const el2 = document.getElementById('navSpecCount');
-    if (el1) el1.textContent = formatted;
-    if (el2) el2.textContent = formatted;
-  }
-
-  function showNotFound(msg) {
-    document.getElementById('playerCol').innerHTML = `
-      <div class="not-found">
-        <h2>Match introuvable</h2>
-        <p>${msg}</p>
-        <a href="index.html" class="btn-primary">← Retour à l'accueil</a>
-      </div>`;
-  }
 
 })();
 </script>
