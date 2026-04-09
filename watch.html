@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Footizi — Watch</title>
+  <link rel="icon" href="https://i.imgur.com/8mXGQqQ.png" type="image/png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0a; --bg2: #111111; --bg3: #1a1a1a;
+      --green: #00e676; --text: #ffffff; --muted: #888;
+      --border: rgba(255,255,255,0.05);
+    }
+    html, body {
+      height: 100%; background: var(--bg);
+      font-family: 'Inter', sans-serif;
+      color: var(--text); overflow-x: hidden;
+    }
+
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(10,10,10,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1rem;
+    }
+    .nav-inner {
+      max-width: 1400px; margin: 0 auto;
+      display: flex; align-items: center;
+      justify-content: space-between;
+      height: 56px; gap: 1rem;
+    }
+    .back-btn {
+      display: flex; align-items: center; gap: 6px;
+      color: var(--muted); text-decoration: none;
+      font-size: 0.85rem; font-weight: 500;
+      padding: 6px 12px; border-radius: 8px;
+      border: 1px solid var(--border);
+      transition: all 0.2s;
+    }
+    .back-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
+    .back-btn svg { width: 16px; height: 16px; }
+    .brand {
+      font-size: 1.3rem; font-weight: 800;
+      color: var(--text); text-decoration: none;
+      letter-spacing: -0.5px;
+    }
+    .brand em { color: var(--green); font-style: normal; }
+    .nav-right { display: flex; align-items: center; gap: 8px; }
+    .nav-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 8px;
+      font-size: 0.8rem; font-weight: 600;
+      text-decoration: none; border: 1px solid var(--border);
+      color: var(--text); background: var(--bg3);
+      transition: all 0.2s;
+    }
+    .nav-btn:hover { background: #222; border-color: rgba(255,255,255,0.15); }
+    .nav-btn.discord { background: #5865f2; border-color: #5865f2; color: #fff; }
+    .nav-btn.discord:hover { background: #4752c4; }
+    .spectateurs-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 0.78rem; font-weight: 600;
+      color: var(--green); background: rgba(0,230,118,0.1);
+      border: 1px solid rgba(0,230,118,0.2);
+      padding: 5px 10px; border-radius: 999px;
+    }
+    .spectateurs-badge svg { width: 13px; height: 13px; stroke: var(--green); }
+
+    /* LAYOUT */
+    .page-wrap {
+      max-width: 1400px; margin: 0 auto;
+      padding: 1.5rem 1rem;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 1.5rem;
+    }
+    @media (max-width: 900px) {
+      .page-wrap { grid-template-columns: 1fr; }
+    }
+
+    /* PLAYER COL */
+    .player-col {}
+
+    /* MATCH HEADER */
+    .match-header {
+      display: flex; align-items: center;
+      gap: 1rem; margin-bottom: 1rem;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 16px 20px;
+    }
+    .team-block {
+      display: flex; align-items: center;
+      gap: 10px; flex: 1;
+    }
+    .team-block.away { flex-direction: row-reverse; }
+    .team-logo {
+      width: 44px; height: 44px;
+      object-fit: contain; border-radius: 8px;
+      background: var(--bg3); padding: 4px;
+    }
+    .team-name {
+      font-size: 1rem; font-weight: 700;
+      color: var(--text);
+    }
+    .match-vs {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 4px;
+      min-width: 80px;
+    }
+    .vs-text {
+      font-size: 1.1rem; font-weight: 800;
+      color: var(--green);
+    }
+    .match-badge {
+      font-size: 0.65rem; font-weight: 700;
+      padding: 3px 8px; border-radius: 999px;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .badge-live {
+      background: rgba(255,59,48,0.15);
+      color: #ff3b30; border: 1px solid rgba(255,59,48,0.3);
+      animation: pulseBadge 1.5s infinite;
+    }
+    .badge-upcoming {
+      background: rgba(255,204,0,0.15);
+      color: #ffcc00; border: 1px solid rgba(255,204,0,0.3);
+    }
+    .badge-finished {
+      background: rgba(136,136,136,0.15);
+      color: var(--muted); border: 1px solid var(--border);
+    }
+    @keyframes pulseBadge {
+      0%,100% { opacity: 1; } 50% { opacity: 0.5; }
+    }
+    .competition-tag {
+      font-size: 0.72rem; color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* PLAYER */
+    .player-block {
+      background: #000; border-radius: 16px;
+      overflow: hidden; position: relative;
+      aspect-ratio: 16/9;
+    }
+    .player-block video,
+    .player-block iframe {
+      width: 100%; height: 100%;
+      border: none; display: block;
+    }
+
+    /* PREMATCH */
+    .prematch {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
+      z-index: 10; text-align: center; gap: 12px;
+    }
+    .prematch.hidden { display: none; }
+    .prematch-label {
+      font-size: 0.75rem; font-weight: 700;
+      color: var(--green); text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .prematch-title {
+      font-size: 1.3rem; font-weight: 800;
+    }
+    .prematch-timer {
+      font-size: 2rem; font-weight: 800;
+      color: var(--green); font-variant-numeric: tabular-nums;
+    }
+    .prematch-sub { font-size: 0.8rem; color: var(--muted); }
+
+    /* SOURCES */
+    .sources-wrap {
+      display: flex; align-items: center;
+      gap: 10px; margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .sources-list { display: flex; gap: 8px; flex-wrap: wrap; }
+    .src-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 14px; border-radius: 10px;
+      font-size: 0.8rem; font-weight: 600;
+      background: var(--bg3); color: var(--muted);
+      border: 1px solid var(--border);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .src-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
+    .src-btn.active {
+      background: rgba(0,230,118,0.1);
+      color: var(--green);
+      border-color: rgba(0,230,118,0.3);
+    }
+
+    /* WATCH BAR */
+    .watch-bar {
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 14px;
+      background: var(--bg2); border-radius: 12px;
+      padding: 12px 16px; margin-top: 12px;
+      border-left: 3px solid var(--green);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--green);
+    }
+    .watch-left { display: flex; align-items: center; gap: 10px; }
+    .watch-label { font-size: 0.65rem; color: var(--green); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .watch-title { font-size: 0.95rem; font-weight: 700; margin-top: 2px; }
+    .watch-title .vs { color: var(--green); margin: 0 4px; }
+    .watch-right { display: flex; align-items: center; gap: 8px; }
+    .info-tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.72rem; font-weight: 600;
+      background: var(--bg3); padding: 5px 10px;
+      border-radius: 8px; border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .info-tag.channel { color: var(--text); }
+    .info-tag.spec {
+      color: var(--green);
+      background: rgba(0,230,118,0.08);
+      border-color: rgba(0,230,118,0.2);
+      border-radius: 999px;
+    }
+    .info-tag.spec svg { width: 13px; height: 13px; stroke: var(--green); }
+
+    /* ERROR */
+    .player-error {
+      position: absolute; inset: 0;
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.9); gap: 10px;
+      text-align: center; padding: 2rem;
+    }
+    .player-error.visible { display: flex; }
+    .err-title { font-size: 1.1rem; font-weight: 700; }
+    .err-hint { font-size: 0.8rem; color: var(--muted); max-width: 300px; }
+    .err-retry {
+      padding: 8px 18px; border-radius: 8px;
+      background: var(--green); color: #000;
+      font-weight: 700; border: none; cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    /* CHAT COL */
+    .chat-col {
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .chat-box {
+      flex: 1; min-height: 500px;
+      border-radius: 16px; overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--bg2);
+    }
+    .chat-box iframe {
+      width: 100%; height: 100%;
+      min-height: 500px; border: none;
+    }
+
+    /* NOT FOUND */
+    .not-found {
+      text-align: center; padding: 4rem 2rem;
+    }
+    .not-found h2 { margin-bottom: 0.5rem; }
+    .not-found p { color: var(--muted); margin-bottom: 1.5rem; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 20px; border-radius: 10px;
+      background: var(--green); color: #000;
+      font-weight: 700; text-decoration: none;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+      Retour
+    </a>
+    <a href="index.html" class="brand">Foot<em>izi</em></a>
+    <div class="nav-right">
+      <span class="spectateurs-badge" id="navSpec">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span id="navSpecCount">0</span>
+      </span>
+      <a href="https://discord.gg/VOTRE_DISCORD" target="_blank" class="nav-btn discord">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.033.055a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+        Discord
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- CONTENU -->
+<div class="page-wrap" id="pageWrap">
+
+  <!-- PLAYER COL -->
+  <div class="player-col" id="playerCol">
+    <div class="not-found">
+      <h2>Chargement...</h2>
+      <p>Récupération du match en cours</p>
+    </div>
+  </div>
+
+  <!-- CHAT COL -->
+  <div class="chat-col">
+    <div class="chat-box">
+      <iframe src="https://www.twitch.tv/embed/jemangepersonne/chat?parent=footizi.vercel.app&parent=localhost"
+        allowfullscreen>
+      </iframe>
+    </div>
+  </div>
+
+</div>
+
+<!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://cauctdopucifmsocjupb.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Njcg4uVGEcGl8UuV8wqqPg_gur6TmqI';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+(async function() {
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get('m');
+
+  if (!slug) {
+    showNotFound('Aucun match spécifié');
+    return;
+  }
+
+  // Charger le match depuis Supabase
+  const { data: match, error } = await supabase
+    .from('matches')
+    .select('*')
+    .eq('slug', slug)
+    .single();
+
+  if (error || !match) {
+    showNotFound('Match introuvable ou supprimé');
+    return;
+  }
+
+  // Mettre à jour le titre
+  document.title = `${match.home_name} vs ${match.away_name} — Footizi`;
+
+  // Construire le badge statut
+  let badgeClass = 'badge-upcoming';
+  let badgeText = 'À venir';
+  if (match.status === 'live') { badgeClass = 'badge-live'; badgeText = '🔴 LIVE'; }
+  if (match.status === 'finished') { badgeClass = 'badge-finished'; badgeText = 'Terminé'; }
+
+  // Construire les sources
+  const sources = Array.isArray(match.sources) ? match.sources : [];
+  let sourcesHTML = '';
+  sources.forEach((s, i) => {
+    sourcesHTML += `<button class="src-btn${i===0?' active':''}" data-index="${i}" data-type="${s.type||'m3u8'}" data-url="${s.url}">
+      <span>📡</span>${s.label || 'Source '+(i+1)}
+    </button>`;
+  });
+
+  // Heure du match
+  const matchTime = match.match_time ? new Date(match.match_time) : null;
+  const matchTimeStr = matchTime ? matchTime.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) : '';
+
+  // Construire le HTML du player col
+  document.getElementById('playerCol').innerHTML = `
+    <!-- MATCH HEADER -->
+    <div class="match-header">
+      <div class="team-block">
+        ${match.home_logo ? `<img class="team-logo" src="${match.home_logo}" alt="${match.home_name}" onerror="this.style.display='none'">` : ''}
+        <span class="team-name">${match.home_name}</span>
+      </div>
+      <div class="match-vs">
+        <span class="vs-text">VS</span>
+        <span class="match-badge ${badgeClass}">${badgeText}</span>
+        ${matchTimeStr ? `<span class="competition-tag">${matchTimeStr}</span>` : ''}
+        ${match.competition ? `<span class="competition-tag">${match.competition}</span>` : ''}
+      </div>
+      <div class="team-block away">
+        ${match.away_logo ? `<img class="team-logo" src="${match.away_logo}" alt="${match.away_name}" onerror="this.style.display='none'">` : ''}
+        <span class="team-name">${match.away_name}</span>
+      </div>
+    </div>
+
+    <!-- PLAYER -->
+    <div class="player-block" id="playerBlock">
+      <div class="prematch${match.status !== 'upcoming' ? ' hidden' : ''}" id="prematch">
+        <div class="prematch-label">Diffusion à venir</div>
+        <div class="prematch-title">${match.home_name} vs ${match.away_name}</div>
+        <div class="prematch-timer" id="prematchTimer">--:--:--</div>
+        <div class="prematch-sub">Le lecteur s'affichera automatiquement au lancement.</div>
+      </div>
+
+      <video id="mainPlayer" playsinline controls preload="metadata"
+        style="display:${sources.length && sources[0].type !== 'iframe' ? 'block' : 'none'};width:100%;height:100%">
+      </video>
+      <iframe id="embedPlayer"
+        title="Lecteur intégré"
+        allowfullscreen
+        allow="autoplay; encrypted-media; fullscreen"
+        sandbox="allow-same-origin allow-scripts allow-presentation"
+        style="display:none;width:100%;height:100%;border:none">
+      </iframe>
+
+      <div class="player-error" id="playerError">
+        <div class="err-title">Source indisponible</div>
+        <div class="err-hint">Essayez une autre source ou utilisez un VPN si vous êtes hors de France.</div>
+        <button class="err-retry" id="retryBtn">Réessayer</button>
+      </div>
+    </div>
+
+    <!-- SOURCES -->
+    <div class="sources-wrap">
+      <div class="sources-list" id="sourcesList">${sourcesHTML}</div>
+    </div>
+
+    <!-- WATCH BAR -->
+    <div class="watch-bar">
+      <div class="watch-left">
+        <div>
+          <div class="watch-label">Vous regardez</div>
+          <div class="watch-title">${match.home_name} <span class="vs">VS</span> ${match.away_name}</div>
+        </div>
+      </div>
+      <div class="watch-right">
+        ${match.channel ? `<span class="info-tag channel">📺 ${match.channel}</span>` : ''}
+        <span class="info-tag spec" id="specCount">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span id="specNum">${match.spectateurs || 0}</span>
+        </span>
+      </div>
+    </div>
+  `;
+
+  // Charger la première source
+  if (sources.length > 0) {
+    loadSource(sources[0]);
+  }
+
+  // Prématch countdown
+  if (match.status === 'upcoming' && matchTime) {
+    startCountdown(matchTime);
+  }
+
+  // Events sources
+  document.getElementById('sourcesList').addEventListener('click', function(e) {
+    const btn = e.target.closest('.src-btn');
+    if (!btn) return;
+    document.querySelectorAll('.src-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadSource({
+      type: btn.dataset.type,
+      url: btn.dataset.url
+    });
+  });
+
+  // Retry
+  document.getElementById('retryBtn')?.addEventListener('click', function() {
+    const active = document.querySelector('.src-btn.active');
+    if (active) {
+      document.getElementById('playerError').classList.remove('visible');
+      loadSource({ type: active.dataset.type, url: active.dataset.url });
+    }
+  });
+
+  // Spectateurs simulés
+  updateSpectateurs(match.spectateurs || Math.floor(Math.random() * 500) + 50);
+  setInterval(() => {
+    const current = parseInt(document.getElementById('specNum')?.textContent || '0');
+    const delta = Math.floor(Math.random() * 20) - 10;
+    const next = Math.max(10, current + delta);
+    updateSpectateurs(next);
+  }, 8000);
+
+  function loadSource(source) {
+    const video = document.getElementById('mainPlayer');
+    const iframe = document.getElementById('embedPlayer');
+    const error = document.getElementById('playerError');
+    if (!video || !iframe) return;
+    error?.classList.remove('visible');
+
+    if (source.type === 'iframe') {
+      video.style.display = 'none';
+      video.src = '';
+      iframe.style.display = 'block';
+      iframe.src = source.url;
+    } else {
+      iframe.style.display = 'none';
+      iframe.src = '';
+      video.style.display = 'block';
+      video.src = source.url;
+      video.play().catch(() => {
+        if (error) error.classList.add('visible');
+      });
+    }
+  }
+
+  function startCountdown(target) {
+    const el = document.getElementById('prematchTimer');
+    if (!el) return;
+    function tick() {
+      const now = new Date();
+      const diff = target - now;
+      if (diff <= 0) {
+        el.textContent = '00:00:00';
+        document.getElementById('prematch')?.classList.add('hidden');
+        return;
+      }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+    tick();
+    setInterval(tick, 1000);
+  }
+
+  function updateSpectateurs(n) {
+    const formatted = n.toLocaleString('fr-FR');
+    const el1 = document.getElementById('specNum');
+    const el2 = document.getElementById('navSpecCount');
+    if (el1) el1.textContent = formatted;
+    if (el2) el2.textContent = formatted;
+  }
+
+  function showNotFound(msg) {
+    document.getElementById('playerCol').innerHTML = `
+      <div class="not-found">
+        <h2>Match introuvable</h2>
+        <p>${msg}</p>
+        <a href="index.html" class="btn-primary">← Retour à l'accueil</a>
+      </div>`;
+  }
+
+})();
+</script>
+
+</body>
+</html>
