@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Footizi – Streaming Football Gratuit</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #00e676;
+      --cyan: #00bcd4;
+      --dark: #0a0a0a;
+      --card: #111827;
+      --card2: #1f2937;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --live: #ef4444;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--dark); color: var(--text); min-height: 100vh; }
+
+    /* HEADER */
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem;
+      background: rgba(17,24,39,0.95);
+      border-bottom: 1px solid #1f2937;
+      position: sticky; top: 0; z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+    .logo { font-size: 1.6rem; font-weight: 900; background: linear-gradient(135deg, var(--green), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .logo span { font-size: 1rem; font-weight: 400; -webkit-text-fill-color: var(--muted); margin-left: 6px; }
+    nav a {
+      color: var(--muted); text-decoration: none; margin-left: 1.5rem; font-weight: 600; font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    nav a:hover { color: var(--green); }
+    .discord-btn {
+      background: #5865f2; color: white; border: none; padding: 0.5rem 1.2rem;
+      border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.85rem;
+      text-decoration: none; margin-left: 1.5rem; transition: opacity 0.2s;
+    }
+    .discord-btn:hover { opacity: 0.85; }
+
+    /* HERO */
+    .hero {
+      text-align: center; padding: 4rem 1rem 3rem;
+      background: radial-gradient(ellipse at top, #0d2a1a 0%, var(--dark) 70%);
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(0,230,118,0.1); border: 1px solid var(--green);
+      color: var(--green); padding: 0.4rem 1rem; border-radius: 999px;
+      font-size: 0.8rem; font-weight: 700; margin-bottom: 1.5rem;
+    }
+    .live-dot { width: 8px; height: 8px; background: var(--live); border-radius: 50%; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+    .hero h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 900; line-height: 1.1; margin-bottom: 1rem; }
+    .hero h1 span { background: linear-gradient(135deg, var(--green), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero p { color: var(--muted); font-size: 1.1rem; max-width: 500px; margin: 0 auto 2rem; }
+
+    /* STATS */
+    .stats { display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; padding: 1rem; }
+    .stat-card {
+      background: var(--card); border: 1px solid #1f2937; border-radius: 12px;
+      padding: 1.2rem 2rem; text-align: center; min-width: 140px;
+    }
+    .stat-num { font-size: 2rem; font-weight: 900; color: var(--green); }
+    .stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+
+    /* FILTERS */
+    .filters-section { padding: 2rem 2rem 1rem; max-width: 1200px; margin: 0 auto; }
+    .filters-row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; }
+    .filter-btn {
+      background: var(--card); border: 1px solid #1f2937; color: var(--muted);
+      padding: 0.5rem 1.2rem; border-radius: 999px; cursor: pointer; font-size: 0.85rem;
+      font-weight: 600; transition: all 0.2s;
+    }
+    .filter-btn.active, .filter-btn:hover { background: var(--green); color: #000; border-color: var(--green); }
+    .search-input {
+      background: var(--card); border: 1px solid #1f2937; color: var(--text);
+      padding: 0.5rem 1.2rem; border-radius: 999px; font-size: 0.85rem;
+      outline: none; width: 220px; transition: border-color 0.2s;
+    }
+    .search-input:focus { border-color: var(--green); }
+    .search-input::placeholder { color: var(--muted); }
+
+    /* GRID */
+    .matches-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; padding: 0 2rem 4rem; max-width: 1200px; margin: 0 auto; }
+
+    /* CARD */
+    .match-card {
+      background: var(--card); border: 1px solid #1f2937; border-radius: 16px;
+      padding: 1.5rem; cursor: pointer; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      position: relative; overflow: hidden;
+    }
+    .match-card:hover { transform: translateY(-4px); border-color: var(--green); box-shadow: 0 8px 32px rgba(0,230,118,0.1); }
+    .match-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--green), var(--cyan)); }
+    .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
+    .competition { font-size: 0.75rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+    .status-badge {
+      font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 999px;
+    }
+    .status-live { background: rgba(239,68,68,0.15); color: var(--live); border: 1px solid var(--live); animation: pulse 1.5s infinite; }
+    .status-upcoming { background: rgba(0,188,212,0.15); color: var(--cyan); border: 1px solid var(--cyan); }
+    .status-finished { background: rgba(148,163,184,0.15); color: var(--muted); border: 1px solid #334155; }
+
+    .teams { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; }
+    .team { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; }
+    .team img { width: 52px; height: 52px; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5)); }
+    .team-name { font-size: 0.85rem; font-weight: 700; text-align: center; }
+    .vs { font-size: 1.2rem; font-weight: 900; color: var(--muted); padding: 0 0.5rem; }
+
+    .card-bottom { display: flex; justify-content: space-between; align-items: center; }
+    .match-time { font-size: 0.8rem; color: var(--muted); }
+    .match-channel { font-size: 0.75rem; color: var(--cyan); font-weight: 600; }
+    .viewers { font-size: 0.75rem; color: var(--muted); }
+
+    .watch-btn {
+      display: block; width: 100%; margin-top: 1rem;
+      background: linear-gradient(135deg, var(--green), var(--cyan));
+      color: #000; border: none; padding: 0.7rem; border-radius: 10px;
+      font-weight: 800; font-size: 0.9rem; cursor: pointer; transition: opacity 0.2s;
+    }
+    .watch-btn:hover { opacity: 0.85; }
+
+    /* MODAL */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.85); z-index: 1000;
+      align-items: center; justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--card); border: 1px solid #1f2937; border-radius: 20px;
+      width: 90%; max-width: 860px; max-height: 90vh; overflow-y: auto;
+    }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 1.5rem; border-bottom: 1px solid #1f2937;
+    }
+    .modal-title { font-size: 1.1rem; font-weight: 800; }
+    .modal-close { background: none; border: none; color: var(--muted); font-size: 1.5rem; cursor: pointer; }
+    .modal-close:hover { color: var(--text); }
+    .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; margin: 1rem; border-radius: 12px; overflow: hidden; background: #000; }
+    .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+    .sources-section { padding: 1rem 1.5rem 1.5rem; }
+    .sources-title { font-size: 0.85rem; color: var(--muted); font-weight: 700; margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+    .source-btn {
+      display: inline-block; background: var(--card2); border: 1px solid #334155;
+      color: var(--text); padding: 0.5rem 1rem; border-radius: 8px; margin: 4px;
+      font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+      text-decoration: none;
+    }
+    .source-btn:hover, .source-btn.active { background: var(--green); color: #000; border-color: var(--green); }
+
+    /* EMPTY */
+    .empty { text-align: center; padding: 4rem 1rem; color: var(--muted); }
+    .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+
+    /* FOOTER */
+    footer { text-align: center; padding: 2rem; border-top: 1px solid #1f2937; color: var(--muted); font-size: 0.8rem; }
+    footer span { color: var(--green); }
+
+    @media(max-width: 600px) {
+      header { padding: 1rem; }
+      nav { display: none; }
+      .matches-grid { padding: 0 1rem 3rem; }
+      .filters-section { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⚽ Footizi <span>Beta</span></div>
+  <nav>
+    <a href="#">Accueil</a>
+    <a href="#">Calendrier</a>
+    <a href="#">Compétitions</a>
+    <a href="https://discord.gg/footizi" target="_blank" class="discord-btn">💬 Discord</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-badge"><div class="live-dot"></div> Streaming en direct</div>
+  <h1>Le Football<br/><span>Gratuit & HD</span></h1>
+  <p>Tous les matchs en direct, sans abonnement. Qualité HD garantie.</p>
+  <div class="stats">
+    <div class="stat-card"><div class="stat-num" id="stat-live">0</div><div class="stat-label">Matchs en live</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-upcoming">0</div><div class="stat-label">À venir aujourd'hui</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-viewers">0</div><div class="stat-label">Spectateurs actifs</div></div>
+  </div>
+</section>
+
+<section class="filters-section">
+  <div class="filters-row">
+    <button class="filter-btn active" onclick="setFilter('all', this)">🌍 Tous</button>
+    <button class="filter-btn" onclick="setFilter('live', this)">🔴 Live</button>
+    <button class="filter-btn" onclick="setFilter('upcoming', this)">🕐 À venir</button>
+    <button class="filter-btn" onclick="setFilter('finished', this)">✅ Terminés</button>
+    <input class="search-input" type="text" placeholder="🔍 Rechercher un match..." oninput="setSearch(this.value)"/>
+  </div>
+</section>
+
+<div class="matches-grid" id="matches-grid"></div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Match</div>
+      <button class="modal-close" onclick="document.getElementById('modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="video-wrapper">
+      <iframe id="modal-iframe" src="" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+    </div>
+    <div class="sources-section">
+      <div class="sources-title">📡 Sources disponibles</div>
+      <div id="modal-sources"></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>© 2025 <span>Footizi</span> — Streaming gratuit · Fait avec ❤️ pour les fans de foot</p>
+</footer>
+
+<script>
+  const SUPABASE_URL = 'https://cauctdopucifmsocjupb.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_Njcg4uVGEcGl8UuV8wqqPg_gur6TmqI';
+
+  let allMatches = [];
+  let currentFilter = 'all';
+  let currentSearch = '';
+
+  async function fetchMatches() {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/diffusions?select=*&order=match_date.asc`, {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Content-Type': 'application/json'
+        }
+      });
+      allMatches = await res.json();
+      updateStats();
+      renderMatches();
+    } catch(e) {
+      document.getElementById('matches-grid').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p>Erreur de connexion à la base de données.</p></div>';
+    }
+  }
+
+  function updateStats() {
+    const live = allMatches.filter(m => m.status === 'live').length;
+    const upcoming = allMatches.filter(m => m.status === 'upcoming').length;
+    const viewers = allMatches.reduce((acc, m) => acc + (m.viewers || 0), 0);
+    document.getElementById('stat-live').textContent = live;
+    document.getElementById('stat-upcoming').textContent = upcoming;
+    document.getElementById('stat-viewers').textContent = viewers >= 1000 ? (viewers/1000).toFixed(1)+'k' : viewers;
+  }
+
+  function setFilter(f, el) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    renderMatches();
+  }
+
+  function setSearch(v) {
+    currentSearch = v.toLowerCase();
+    renderMatches();
+  }
+
+  function renderMatches() {
+    const grid = document.getElementById('matches-grid');
+    let filtered = allMatches;
+
+    if (currentFilter !== 'all') filtered = filtered.filter(m => m.status === currentFilter);
+    if (currentSearch) filtered = filtered.filter(m =>
+      (m.team1||'').toLowerCase().includes(currentSearch) ||
+      (m.team2||'').toLowerCase().includes(currentSearch) ||
+      (m.competition||'').toLowerCase().includes(currentSearch)
+    );
+
+    if (!filtered.length) {
+      grid.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><p>Aucun match trouvé.</p></div>';
+      return;
+    }
+
+    grid.innerHTML = filtered.map(m => {
+      const statusLabel = m.status === 'live' ? '🔴 LIVE' : m.status === 'upcoming' ? '🕐 À venir' : '✅ Terminé';
+      const statusClass = m.status === 'live' ? 'status-live' : m.status === 'upcoming' ? 'status-upcoming' : 'status-finished';
+      const date = new Date(m.match_date);
+      const time = date.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+      const logo1 = m.team1_logo || 'https://via.placeholder.com/52x52/1f2937/00e676?text=' + encodeURIComponent((m.team1||'?')[0]);
+      const logo2 = m.team2_logo || 'https://via.placeholder.com/52x52/1f2937/00e676?text=' + encodeURIComponent((m.team2||'?')[0]);
+
+      return `
+        <div class="match-card" onclick="openModal(${m.id})">
+          <div class="card-top">
+            <div class="competition">${m.competition || 'Football'}</div>
+            <div class="status-badge ${statusClass}">${statusLabel}</div>
+          </div>
+          <div class="teams">
+            <div class="team">
+              <img src="${logo1}" alt="${m.team1}" onerror="this.src='https://via.placeholder.com/52x52/1f2937/00e676?text=${encodeURIComponent((m.team1||'?')[0])}'"/>
+              <div class="team-name">${m.team1 || '?'}</div>
+            </div>
+            <div class="vs">VS</div>
+            <div class="team">
+              <img src="${logo2}" alt="${m.team2}" onerror="this.src='https://via.placeholder.com/52x52/1f2937/00e676?text=${encodeURIComponent((m.team2||'?')[0])}'"/>
+              <div class="team-name">${m.team2 || '?'}</div>
+            </div>
+          </div>
+          <div class="card-bottom">
+            <div class="match-time">⏰ ${time}</div>
+            <div class="match-channel">📺 ${m.channel || 'Non défini'}</div>
+            ${m.viewers ? `<div class="viewers">👁 ${m.viewers}</div>` : ''}
+          </div>
+          ${m.status === 'live' ? '<button class="watch-btn">▶ Regarder maintenant</button>' : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  function openModal(id) {
+    const m = allMatches.find(x => x.id === id);
+    if (!m) return;
+    document.getElementById('modal-title').textContent = `${m.team1} vs ${m.team2}`;
+    document.getElementById('modal-iframe').src = m.stream_url || '';
+
+    const sources = [];
+    if (m.stream_url) sources.push({label: '📡 Source 1', url: m.stream_url});
+    if (m.stream_url2) sources.push({label: '📡 Source 2', url: m.stream_url2});
+    if (m.stream_url3) sources.push({label: '📡 Source 3', url: m.stream_url3});
+
+    document.getElementById('modal-sources').innerHTML = sources.length
+      ? sources.map((s,i) => `<button class="source-btn ${i===0?'active':''}" onclick="switchSource('${s.url}', this)">${s.label}</button>`).join('')
+      : '<span style="color:var(--muted);font-size:0.8rem">Aucune source disponible pour ce match.</span>';
+
+    document.getElementById('modal').classList.add('open');
+  }
+
+  function switchSource(url, el) {
+    document.getElementById('modal-iframe').src = url;
+    document.querySelectorAll('.source-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function closeModal(e) {
+    if (e.target.id === 'modal') {
+      document.getElementById('modal').classList.remove('open');
+      document.getElementById('modal-iframe').src = '';
+    }
+  }
+
+  fetchMatches();
+  setInterval(fetchMatches, 30000);
+</script>
+</body>
+</html>
