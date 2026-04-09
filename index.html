@@ -319,7 +319,7 @@
             <div class="match-channel">📺 ${m.channel || 'Non défini'}</div>
             ${m.viewers ? `<div class="viewers">👁 ${m.viewers}</div>` : ''}
           </div>
-          ${m.status === 'live' ? `<a href="watch.html?m=${m.slug}" class="watch-btn">▶ Regarder maintenant</a>` : ''}
+          ${m.status === 'live' ? '<button class="watch-btn">▶ Regarder maintenant</button>' : ''}
         </div>
       `;
     }).join('');
