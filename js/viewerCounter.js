@@ -19,7 +19,7 @@ export async function initViewerCounter(pageName, elementId, readonly = false) {
     await supabase.rpc('increment_viewer', { page: pageName });
 
     // Décrémenter quand l'utilisateur quitte
-  window.addEventListener('beforeunload', () => {
+    window.addEventListener('beforeunload', () => {
       navigator.sendBeacon('/api/decrement', JSON.stringify({ page: pageName }));
     });
   }
