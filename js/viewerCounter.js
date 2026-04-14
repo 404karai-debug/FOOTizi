@@ -19,10 +19,9 @@ export async function initViewerCounter(pageName, elementId, readonly = false) {
     await supabase.rpc('increment_viewer', { page: pageName });
 
     // Décrémenter quand l'utilisateur quitte
-    window.addEventListener('beforeunload', () => {
-      navigator.sendBeacon('/api/decrement', JSON.stringify({ page: pageName }));
-    });
-  }
+  window.addEventListener('beforeunload', async () => {
+  await supabase.rpc('decrement_viewer', { page: pageName });
+});
 
   // --- Lire le count en temps réel ---
   const channel = supabase
