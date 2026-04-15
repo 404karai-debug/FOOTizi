@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr" class="dark">
 <head>
@@ -348,6 +347,10 @@
     .source-btn:hover {
       background: rgba(255, 255, 255, 0.16);
       transform: translateY(-1px);
+    }
+    .source-btn.is-active {
+      background: rgba(34, 197, 94, 0.22);
+      border-color: rgba(34, 197, 94, 0.5);
     }
     /* Embeds tiers : liste blanche par domaine possible — lien de secours */
     .embed-block-notice {
@@ -809,7 +812,7 @@
         <p class="live-rail__empty" hidden>Aucune diffusion en direct</p>
         <ul class="live-channels" id="live-channels-list" role="list">
           <li>
-            <a href="ars-spo.html" class="live-channel-card">
+            <a href="bayern-rma.html" class="live-channel-card">
               <img class="live-channel-card__logo-img" src="https://empire-sport.sbs/upload/leagues/lnjvd4afeukdyr5agooauznrzjyeoh.png" alt="Champions League">
               <div class="live-channel-card__info">
                 <span class="live-channel-card__match">BAY - RMA</span>
@@ -864,11 +867,11 @@
 
     <aside class="col-right" aria-label="Chat du stream">
       <div class="mobile-chat-banner block md:hidden">
-        <img src="https://media.discordapp.net/attachments/1467487399809519689/1493209045551812748/image.png?ex=69de22ca&is=69dcd14a&hm=da908fdbe362efa1c075c577358a0309a0095b7c3af8a6a098db0f20f1d7fa91&=&format=webp&quality=lossless&width=688&height=138" alt="Arsenal - Sporting CP" loading="lazy" decoding="async">
+        <img src="https://media.discordapp.net/attachments/1473053778767777883/1494027723553636462/image.png?ex=69e11d3e&is=69dfcbbe&hm=89fe3209e6f0b7b6ea94cd286f2f88d7c8712959ae08c5ad431e90dcd82ce56e&=&format=webp&quality=lossless&width=1860&height=371" alt="Arsenal - Sporting CP" loading="lazy" decoding="async">
       </div>
       <div class="twitch-chat-wrap">
         <!-- data-twitch-parents="mondomaine.fr" si le chat ne charge pas sur ton hébergeur -->
-        <iframe id="twitch-chat-embed" title="Chat du stream Twitch" data-twitch-channel="Ri1aFOOT" data-twitch-parents="" allowfullscreen loading="lazy"></iframe>
+        <iframe id="twitch-chat-embed" title="Chat du stream Twitch" data-twitch-channel="lkaaaa23" data-twitch-parents="" allowfullscreen loading="lazy"></iframe>
       </div>
     </aside>
 
@@ -977,7 +980,7 @@
         if (title) {
           try { title = decodeURIComponent(title); } catch (e) {}
           line = formatMatchTitle(title);
-          document.title = "IMFTX — " + line;
+          document.title = "FOOTizi — " + line;
         } else {
           line = formatMatchTitle(footer.textContent);
         }
@@ -1046,9 +1049,35 @@
         }));
       }
 
+      function applyPlayerSandbox(iframe, btn) {
+        var sb = btn && btn.getAttribute("data-sandbox");
+        if (sb && sb.trim()) {
+          iframe.setAttribute("sandbox", sb.trim());
+        } else {
+          iframe.removeAttribute("sandbox");
+        }
+      }
+
+      function initSourceSwitcher() {
+        var iframe = document.getElementById("mainPlayer");
+        var btns = document.querySelectorAll(".source-group .source-btn");
+        if (!iframe || !btns.length) return;
+        btns.forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var u = btn.getAttribute("data-player-src");
+            if (!u) return;
+            applyPlayerSandbox(iframe, btn);
+            iframe.src = u;
+            btns.forEach(function (b) { b.classList.remove("is-active"); });
+            btn.classList.add("is-active");
+          });
+        });
+      }
+
       function boot() {
         initNavChrome();
         initTwitchChatEmbed();
+        initSourceSwitcher();
         applyTitleFromQuery();
         window.addEventListener("load", function () {
           applyTitleFromQuery();
